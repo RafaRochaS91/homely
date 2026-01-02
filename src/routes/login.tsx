@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useForm, type FieldApi } from '@tanstack/react-form';
+import { useForm } from '@tanstack/react-form';
 import { z } from 'zod';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export const Route = createFileRoute('/login')({
 });
 
 const loginSchema = z.object({
-  email: z.email('Please enter a valid email address'),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -23,15 +23,15 @@ function Login() {
   const navigate = useNavigate();
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm({
     defaultValues: {
       email: '',
       password: '',
-    },
+    } as LoginFormValues,
     validators: {
       onChange: loginSchema,
     },
-    onSubmit: async ({ value }: { value: LoginFormValues }) => {
+    onSubmit: async ({ value }) => {
       setSubmitError(null);
 
       try {
@@ -41,9 +41,9 @@ function Login() {
         });
 
         if (result.error) {
+          console.error(result.error);
           setSubmitError(result.error.message || 'Failed to sign in');
         } else {
-          // Redirect to home page on success
           navigate({ to: '/' });
         }
       } catch (err) {
@@ -54,10 +54,12 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-          <CardDescription className="text-center">Enter your email and password to sign in</CardDescription>
+          <CardDescription className="text-center">
+            Enter your email and password to sign in to your account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form
@@ -70,10 +72,10 @@ function Login() {
             <form.Field
               name="email"
               validators={{
-                onChange: z.string().email('Please enter a valid email address'),
+                onChange: z.email('Please enter a valid email address'),
               }}
             >
-              {(field: FieldApi<LoginFormValues, 'email', undefined, undefined>) => (
+              {(field) => (
                 <FormField>
                   <FormItem>
                     <FormLabel htmlFor={field.name}>Email</FormLabel>
@@ -86,9 +88,15 @@ function Login() {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         disabled={form.state.isSubmitting}
+                        aria-invalid={field.state.meta.errors.length > 0}
+                        aria-describedby={field.state.meta.errors.length > 0 ? `${field.name}-error` : undefined}
                       />
                     </FormControl>
-                    {field.state.meta.errors.length > 0 && <FormMessage>{field.state.meta.errors[0]}</FormMessage>}
+                    {field.state.meta.errors.length > 0 && (
+                      <FormMessage id={`${field.name}-error`}>
+                        {String(field.state.meta.errors[0]?.message || 'Invalid email address')}
+                      </FormMessage>
+                    )}
                   </FormItem>
                 </FormField>
               )}
@@ -100,7 +108,7 @@ function Login() {
                 onChange: z.string().min(6, 'Password must be at least 6 characters'),
               }}
             >
-              {(field: FieldApi<LoginFormValues, 'password', undefined, undefined>) => (
+              {(field) => (
                 <FormField>
                   <FormItem>
                     <FormLabel htmlFor={field.name}>Password</FormLabel>
@@ -113,19 +121,31 @@ function Login() {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         disabled={form.state.isSubmitting}
+                        aria-invalid={field.state.meta.errors.length > 0}
+                        aria-describedby={field.state.meta.errors.length > 0 ? `${field.name}-error` : undefined}
                       />
                     </FormControl>
-                    {field.state.meta.errors.length > 0 && <FormMessage>{field.state.meta.errors[0]}</FormMessage>}
+                    {field.state.meta.errors.length > 0 && (
+                      <FormMessage id={`${field.name}-error`}>
+                        {String(field.state.meta.errors[0]?.message || 'Invalid password')}
+                      </FormMessage>
+                    )}
                   </FormItem>
                 </FormField>
               )}
             </form.Field>
 
             {submitError && (
-              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">{submitError}</div>
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md border border-destructive/20">
+                {submitError}
+              </div>
             )}
 
-            <Button type="submit" className="w-full mt-4" disabled={form.state.isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full mt-6"
+              disabled={form.state.isSubmitting}
+            >
               {form.state.isSubmitting ? 'Signing in...' : 'Sign In'}
             </Button>
           </Form>

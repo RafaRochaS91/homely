@@ -14,3 +14,4 @@ function createDatabaseClient(environment: 'development' | 'production' | 'test'
 }
 
 export const db = createDatabaseClient(process.env.NODE_ENV as 'development' | 'production' | 'test' ?? 'development');
+export { user } from './schema';
